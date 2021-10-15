@@ -1,0 +1,103 @@
+var twitter = TwitterWebService.getInstance(
+ "XXXXXXXXXXXXXXXXXXXXXXXXX",
+ "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"
+);
+
+function authorize() {
+ twitter.authorize();
+}
+
+function reset() {
+ twitter.reset();
+}
+
+function authCallback(request) {
+ return twitter.authCallback(request);
+}
+
+function tweet() {
+  var service  = twitter.getService();
+  var response = service.fetch("https://api.twitter.com/1.1/statuses/update.json", {
+    method: "post",
+    payload: { status: "test\ntest" }
+  });
+}
+
+function getUserId(userName) {
+  var service = twitter.getService();
+  var requestURL = "https://api.twitter.com/1.1/users/lookup.json?screen_name=" + userName
+  var response = service.fetch(requestURL, {
+    method: "get",
+    contentType: 'application/json'
+  });
+
+  return JSON.parse(response.getContentText())[0].id_str
+}
+
+function sendDM(_, userName, text){
+  if (userName == undefined) { userName = "hogehoge" }
+  if (text == undefined) {
+    prop = PropertiesService.getScriptProperties()
+    counter = prop.getProperty("counter")
+    if (counter == undefined) { counter = 0 }
+    counter++
+    text = "(" + counter + "回目)"
+    prop.setProperty("counter", counter)
+  }
+  userId = getUserId(userName)
+
+  try{
+    var service = twitter.getService();
+    var payload = JSON.stringify({
+      event: {
+        type: 'message_create',
+        message_create: {
+          target: {
+            recipient_id: String(userId)  
+          },
+          message_data: { text: text }  
+        }
+      }
+    });
+    var response = service.fetch('https://api.twitter.com/1.1/direct_messages/events/new.json',{
+      method: 'POST',
+      contentType: 'application/json',
+      payload: payload
+    });
+    return response;
+  } catch(e) {
+    Logger.log('Exception:'+e);
+  }
+}
+
+function setTrigger(_, funcName) {
+  if (funcName == undefined) { funcName = "sendDM" }
+
+  const time = new Date();
+  const rh = [9, 21]
+  const rm = [0, 60]
+
+  triggerHour = Math.floor(Math.random() * (rh[1] - rh[0])) + rh[0]
+  triggerMinite = Math.floor(Math.random() * (rm[1] - rm[0])) + rm[0]
+
+  time.setHours(triggerHour); 
+  time.setMinutes(triggerMinite);
+  time.setSeconds(0);
+  ScriptApp.newTrigger(funcName).timeBased().at(time).create();
+}
+
+function deleteTrigger(_, funcName) {
+  if (funcName == undefined) { funcName = "sendDM" }
+
+  const triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() == funcName) {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+}
+
+
+
+
+
