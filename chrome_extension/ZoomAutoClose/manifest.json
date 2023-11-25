@@ -1,0 +1,12 @@
+{
+	"name": "ZoomAutoClose",
+	"version": "1.0",
+	"description": "Zoomのタブを閉じる",
+	"manifest_version": 3,
+	"permissions": [
+		"tabs"
+	],
+	"background": {
+		"service_worker": "content.js"
+	}
+}
